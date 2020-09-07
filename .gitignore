@@ -1,0 +1,3 @@
+volumes/db/*/
+volumes/shapefiles/*/
+volumes/sql/*.sql
