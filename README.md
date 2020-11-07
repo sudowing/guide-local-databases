@@ -11,6 +11,7 @@
     * [More on SRIDs](#postgis-more_on_sri_ds)
     * [Connect to DB Instance:](#postgis-connect_to_db_instance)
 * [PostgreSQL (Dockerized DB Instance)](#postgresql_premade)
+    * [Connect to DB Instance:](#postgresql_premade-connect_to_db_instance)
 * [PostgreSQL (Simple ETL)](#postgresql)
     * [Download Sample Data](#postgresql-download_sample_data)
     * [Create Docker Network & Run DB Container](#postgresql-create_docker_network_run_db_container)
@@ -30,7 +31,7 @@
 ## <a id="postgis-create_docker_network_run_db_container"></a> Create Docker Network & Run DB Container
 ```sh
 # create directories to hold persistantDB data
-mkdir -p $(pwd)/volumes/postgis_db_data
+mkdir -p $(pwd)/volumes/db/postgis_db_data
 
 # create directories to hold downloaded data
 mkdir -p $(pwd)/volumes/shapefiles
@@ -94,7 +95,9 @@ sudo dnf install postgis-utils
 
 Once you have `shp2pgsql` available locally -- you can use it to transform shapefiles (`.shp`) to SQL.
 
-##### **NOTE:** The value passed with the `-s` flag is the [SRID](https://en.wikipedia.org/wiki/Spatial_reference_system). Always make an attempt to determine the `SRID` used in the source data, else the tool will fall back to a default that may not produce the projections you expect.
+##### **NOTE 1:** I'm only processing a single shapefile (`gis_osm_places_free_1`), but you can use these steps to process all eighteen (18) present in the archive.
+
+##### **NOTE 2:** The value passed with the `-s` flag is the [SRID](https://en.wikipedia.org/wiki/Spatial_reference_system). Always make an attempt to determine the `SRID` used in the source data, else the tool will fall back to a default that may not produce the projections you expect.
 
 ```sh
 # transform shapefiles via shp2pgsql
@@ -108,19 +111,12 @@ Once you've got `.sql` files, you can now execute them via CLI.
 
 ```sh
 # set postgres password as ENV Variable
-PGPASSWORD=secret
-
+# and
 # execute SQL against a remote postgres instance
-psql \
+PGPASSWORD=secret psql \
  -h localhost -d postgres\
  -U postgres \
  -f $(pwd)/volumes/sql/florida.gis_osm_places_free_1.sql
-
-# keeping this here until I can confirm the multi line above works
-# PGPASSWORD=secret psql \
-#  -h localhost -d postgres\
-#  -U postgres \
-#  -f $(pwd)/volumes/sql/florida.gis_osm_places_free_1.sql
 ```
 ## <a id="postgis-more_on_sri_ds"></a> More on SRIDs
 
@@ -149,6 +145,37 @@ SELECT f_table_name, f_geometry_column, srid FROM geometry_columns;
 
 A couple years ago, I published [a project that loads a PostgreSQL Instance](https://github.com/sudowing/cms-utilization-db). If you're just looking to get a sample PostgreSQL instance running, That's probably a decent project to use.
 
+```sh
+# create directories to hold persistantDB data
+mkdir -p $(pwd)/volumes/db/postgres_cms_data
+
+# run mysql docker container
+docker run -d \
+ -v $(pwd)/volumes/db/postgres_cms_data:/var/lib/postgresql/data \
+ -e POSTGRES_DB=govdata \
+ -e POSTGRES_USER=dbuser \
+ -e PGPASSWORD=dbpassword \
+ -e POSTGRES_PASSWORD=dbpassword \
+ --network mynetwork \
+ --name cms_db \
+ -p 15433:5432 sudowing/cms-utilization-db
+```
+
+##### **NOTE 1:** Restoring this DB requires considerable disk. Ensure you've got 10G free.
+
+##### **NOTE 2:** It will take several minutes (10+ mins) for the DB to be available after Docker container gets launched. There is data in the container and upon execution -- the startup calls an `init` process that starts the load. You can keep an eye on the Docker logs to get an idea where the process is.
+
+```sh
+docker logs cms_db
+```
+
+## <a id="postgresql_premade-connect_to_db_instance"></a> Connect to DB Instance:
+>**host**: localhost  
+**port**: 15433  
+**database**: govdata  
+**user**: dbuser  
+**password**: dbpassword  
+
 # <a id="postgresql"></a> PostgreSQL (Simple ETL)
 
 The demo data used below was published by the team at [postgresqltutorial](https://www.postgresqltutorial.com/postgresql-sample-database/)
@@ -161,7 +188,7 @@ The order of these steps differs from some of the other DB dialects because we w
 
 ```sh
 # create directory to hold persistant data & downloaded data
-mkdir -p $(pwd)/volumes/psql_db_data
+mkdir -p $(pwd)/volumes/db/psql_db_data
 mkdir -p $(pwd)/volumes/zip
 mkdir -p $(pwd)/volumes/sql
 
@@ -194,7 +221,7 @@ docker run \
  -e POSTGRES_USER=dvdrental \
  --network mynetwork \
  --name dvd_rental_db \
- -p 5432:5432 postgres
+ -p 15432:5432 postgres
 ```
 
 ## <a id="postgresql-import_data_via_psql_inside_db_container"></a> Import Data via `psql` inside DB Container
@@ -210,7 +237,7 @@ docker exec \
 
 ## <a id="postgresql-connect_to_db_instance"></a> Connect to DB Instance:
 >**host**: localhost  
-**port**: 5432  
+**port**: 15432  
 **database**: dvdrental  
 **user**: dvdrental  
 **password**: secret 
@@ -220,7 +247,7 @@ docker exec \
 ## <a id="mysql-create_docker_network_run_db_container"></a> Create Docker Network & Run DB Container
 ```sh
 # create directories to hold persistantDB data
-mkdir -p $(pwd)/volumes/mysql_db_data
+mkdir -p $(pwd)/volumes/db/mysql_db_data
 
 # create directories to hold downloaded data
 mkdir -p $(pwd)/volumes/zip
@@ -230,7 +257,7 @@ docker network create mynetwork
 
 # run mysql docker container
 docker run -d \
- -v $(pwd)/volumes/mysql_db_data:/var/lib/mysql \
+ -v $(pwd)/volumes/db/mysql_db_data:/var/lib/mysql \
  -e MYSQL_DATABASE=demo \
  -e MYSQL_USER=user \
  -e MYSQL_PASSWORD=password \
@@ -292,15 +319,15 @@ docker exec -i dev_mysql sh -c 'exec mysql -uroot -p"$MYSQL_ROOT_PASSWORD"' < $(
 
 ```sh
 # create directories to hold persistantDB data
-mkdir -p $(pwd)/volumes/sqlite_db_data
+mkdir -p $(pwd)/volumes/db/sqlite_db_data
 
 # create directories to hold downloaded data
 mkdir -p $(pwd)/volumes/zip
 
 # download demo db
 curl https://raw.githubusercontent.com/lerocha/chinook-database/master/ChinookDatabase/DataSources/Chinook_Sqlite.sqlite \
- --output $(pwd)/volumes/sqlite_db_data/chinook.sqlite
+ --output $(pwd)/volumes/db/sqlite_db_data/chinook.sqlite
 ```
 
 ## <a id="sqlite-connect_to_db_instance"></a> Connect to DB Instance:
->**db_location**: ./volumes/sqlite_db_data/chinook.sqlite
+>**db_location**: ./volumes/db/sqlite_db_data/chinook.sqlite
