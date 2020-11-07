@@ -31,99 +31,6 @@
 
 
 
-# MySQL
-
-
-## create docker network & run DB
-```sh
-# create directories to hold persistantDB data
-mkdir -p $(pwd)/volumes/mysql_db_data
-
-# create directories to hold downloaded data
-mkdir -p $(pwd)/volumes/zip
-
-# create docker network
-docker network create mynetwork
-
-# run mysql docker container
-docker run -d \
- -v $(pwd)/volumes/mysql_db_data:/var/lib/mysql \
- -e MYSQL_DATABASE=demo \
- -e MYSQL_USER=user \
- -e MYSQL_PASSWORD=password \
- -e MYSQL_ROOT_PASSWORD=secret \
- --network mynetwork \
- --name dev_mysql \
- -p 3306:3306 mysql:latest
-```
-
-
-## Load Sample Demo DB (`world-db`)
-
-```sh
-# download demo db
-curl https://downloads.mysql.com/docs/world_x-db.zip \
- --output $(pwd)/volumes/zip/world_x-db.zip
-
-# uncompress downloaded files
-unzip $(pwd)/volumes/zip/world_x-db.zip \
-    -d $(pwd)/volumes/zip/world_x-db
-
-# remove compressed originals
-rm $(pwd)/volumes/zip/world_x-db.zip
-
-# import demo data into db instance
-docker exec -i dev_mysql sh -c 'exec mysql -uroot -p"$MYSQL_ROOT_PASSWORD"' < $(pwd)/volumes/zip/world_x-db/world_x-db/world_x.sql
-```
-
-## Load Sample Demo DB (`sakila-db`)
-
-```sh
-# download demo db
-curl https://downloads.mysql.com/docs/sakila-db.zip \
- --output $(pwd)/volumes/zip/sakila-db.zip
-
-# uncompress downloaded files
-unzip $(pwd)/volumes/zip/sakila-db.zip \
-    -d $(pwd)/volumes/zip/sakila-db
-
-# remove compressed originals
-rm $(pwd)/volumes/zip/sakila-db.zip
-
-# import demo data into db instance (ddl)
-docker exec -i dev_mysql sh -c 'exec mysql -uroot -p"$MYSQL_ROOT_PASSWORD"' < $(pwd)/volumes/zip/sakila-db/sakila-db/sakila-schema.sql
-
-# import demo data into db instance (data)
-docker exec -i dev_mysql sh -c 'exec mysql -uroot -p"$MYSQL_ROOT_PASSWORD"' < $(pwd)/volumes/zip/sakila-db/sakila-db/sakila-data.sql
-```
-
-
-## You can now connect to the DB Instance:
->**host**: localhost  
-**port**: 3306  
-**database**: demo  
-**user**: user  
-**password**: password  
-
-# SQLite
-
-
-```sh
-# create directories to hold persistantDB data
-mkdir -p $(pwd)/volumes/sqlite_db_data
-
-# create directories to hold downloaded data
-mkdir -p $(pwd)/volumes/zip
-
-# download demo db
-curl https://raw.githubusercontent.com/lerocha/chinook-database/master/ChinookDatabase/DataSources/Chinook_Sqlite.sqlite \
- --output $(pwd)/volumes/sqlite_db_data/chinook.sqlite
-```
-
-## You can now connect to the DB Instance:
->**db_location**: ./volumes/sqlite_db_data/chinook.sqlite
-
-
 # PostGIS
 
 
@@ -223,11 +130,9 @@ psql \
 #  -U postgres \
 #  -f $(pwd)/volumes/sql/florida.gis_osm_places_free_1.sql
 ```
+## More on SRIDs
 
-
-
-
-## Note about SRIDs
+> **TL;DR:** You need to know the SRID to query correctly.
 
 Many "Spatial Type" (`ST`) query functions that you will want to use to search through your new data will reference an [SRID](https://en.wikipedia.org/wiki/Spatial_reference_system) which is a numerical ID used to encode metadata about the geo data you loaded.
 
@@ -239,8 +144,106 @@ As such -- you can check the SRIDs for your imported records with this query and
 SELECT f_table_name, f_geometry_column, srid FROM geometry_columns;
 ```
 
+## You can now connect to the DB Instance:
+>**host**: localhost  
+**port**: 5432  
+**database**: postgres  
+**user**: postgres  
+**password**: secret  
 
-# Good Luck and Happy Mapping
+# MySQL
+
+
+## create docker network & run DB
+```sh
+# create directories to hold persistantDB data
+mkdir -p $(pwd)/volumes/mysql_db_data
+
+# create directories to hold downloaded data
+mkdir -p $(pwd)/volumes/zip
+
+# create docker network
+docker network create mynetwork
+
+# run mysql docker container
+docker run -d \
+ -v $(pwd)/volumes/mysql_db_data:/var/lib/mysql \
+ -e MYSQL_DATABASE=demo \
+ -e MYSQL_USER=user \
+ -e MYSQL_PASSWORD=password \
+ -e MYSQL_ROOT_PASSWORD=secret \
+ --network mynetwork \
+ --name dev_mysql \
+ -p 3306:3306 mysql:latest
+```
+
+
+## Load Sample Demo DB (`world-db`)
+
+```sh
+# download demo db
+curl https://downloads.mysql.com/docs/world_x-db.zip \
+ --output $(pwd)/volumes/zip/world_x-db.zip
+
+# uncompress downloaded files
+unzip $(pwd)/volumes/zip/world_x-db.zip \
+    -d $(pwd)/volumes/zip/world_x-db
+
+# remove compressed originals
+rm $(pwd)/volumes/zip/world_x-db.zip
+
+# import demo data into db instance
+docker exec -i dev_mysql sh -c 'exec mysql -uroot -p"$MYSQL_ROOT_PASSWORD"' < $(pwd)/volumes/zip/world_x-db/world_x-db/world_x.sql
+```
+
+## Load Sample Demo DB (`sakila-db`)
+
+```sh
+# download demo db
+curl https://downloads.mysql.com/docs/sakila-db.zip \
+ --output $(pwd)/volumes/zip/sakila-db.zip
+
+# uncompress downloaded files
+unzip $(pwd)/volumes/zip/sakila-db.zip \
+    -d $(pwd)/volumes/zip/sakila-db
+
+# remove compressed originals
+rm $(pwd)/volumes/zip/sakila-db.zip
+
+# import demo data into db instance (ddl)
+docker exec -i dev_mysql sh -c 'exec mysql -uroot -p"$MYSQL_ROOT_PASSWORD"' < $(pwd)/volumes/zip/sakila-db/sakila-db/sakila-schema.sql
+
+# import demo data into db instance (data)
+docker exec -i dev_mysql sh -c 'exec mysql -uroot -p"$MYSQL_ROOT_PASSWORD"' < $(pwd)/volumes/zip/sakila-db/sakila-db/sakila-data.sql
+```
+
+
+## You can now connect to the DB Instance:
+>**host**: localhost  
+**port**: 3306  
+**database**: demo  
+**user**: user  
+**password**: password  
+
+# SQLite
+
+
+```sh
+# create directories to hold persistantDB data
+mkdir -p $(pwd)/volumes/sqlite_db_data
+
+# create directories to hold downloaded data
+mkdir -p $(pwd)/volumes/zip
+
+# download demo db
+curl https://raw.githubusercontent.com/lerocha/chinook-database/master/ChinookDatabase/DataSources/Chinook_Sqlite.sqlite \
+ --output $(pwd)/volumes/sqlite_db_data/chinook.sqlite
+```
+
+## You can now connect to the DB Instance:
+>**db_location**: ./volumes/sqlite_db_data/chinook.sqlite
+
+
 
 
 
