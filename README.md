@@ -1,14 +1,30 @@
 
 
-Databases
-- PostgreSQL
-- PostGIS
-- MySQL
-- Sqlite3
-
-
-
-
+#  <a id="table-of-contents"></a>Table of Contents
+* [postgis](#postgis)
+    * [aaaa](#postgis-ssss)
+    * [aaaa](#postgis-ssss)
+    * [aaaa](#postgis-ssss)
+    * [aaaa](#postgis-ssss)
+    * [aaaa](#postgis-ssss)
+* [postgres](#postgres)
+    * [aaaa](#postgres-ssss)
+    * [aaaa](#postgres-ssss)
+    * [aaaa](#postgres-ssss)
+    * [aaaa](#postgres-ssss)
+    * [aaaa](#postgres-ssss)
+* [mysql](#mysql)
+    * [aaaa](#mysql-ssss)
+    * [aaaa](#mysql-ssss)
+    * [aaaa](#mysql-ssss)
+    * [aaaa](#mysql-ssss)
+    * [aaaa](#mysql-ssss)
+* [sqlite](#sqlite)
+    * [aaaa](#sqlite-ssss)
+    * [aaaa](#sqlite-ssss)
+    * [aaaa](#sqlite-ssss)
+    * [aaaa](#sqlite-ssss)
+    * [aaaa](#sqlite-ssss)
 
 
 
@@ -19,186 +35,129 @@ Databases
 
 
 ## create docker network & run DB
-```
-
-# create directory to hold persistant data & downloaded data
+```sh
+# create directories to hold persistantDB data
 mkdir -p $(pwd)/volumes/mysql_db_data
+
+# create directories to hold downloaded data
 mkdir -p $(pwd)/volumes/zip
 
 # create docker network
 docker network create mynetwork
 
 # run mysql docker container
-docker run \
- -d \
+docker run -d \
  -v $(pwd)/volumes/mysql_db_data:/var/lib/mysql \
- --network mynetwork \
  -e MYSQL_DATABASE=demo \
  -e MYSQL_USER=user \
  -e MYSQL_PASSWORD=password \
  -e MYSQL_ROOT_PASSWORD=secret \
+ --network mynetwork \
  --name dev_mysql \
  -p 3306:3306 mysql:latest
 ```
 
 
+## Load Sample Demo DB (`world-db`)
 
-
-
-
-
-
-
-
-
-
-
-## ooo
-
-```
-
+```sh
 # download demo db
-
 curl https://downloads.mysql.com/docs/world_x-db.zip \
  --output $(pwd)/volumes/zip/world_x-db.zip
 
 # uncompress downloaded files
-
 unzip $(pwd)/volumes/zip/world_x-db.zip \
     -d $(pwd)/volumes/zip/world_x-db
 
 # remove compressed originals
-
 rm $(pwd)/volumes/zip/world_x-db.zip
-
 
 # import demo data into db instance
 docker exec -i dev_mysql sh -c 'exec mysql -uroot -p"$MYSQL_ROOT_PASSWORD"' < $(pwd)/volumes/zip/world_x-db/world_x-db/world_x.sql
 ```
 
+## Load Sample Demo DB (`sakila-db`)
 
-
-
-
-
-## ooo
-
-```
-
+```sh
 # download demo db
-
 curl https://downloads.mysql.com/docs/sakila-db.zip \
  --output $(pwd)/volumes/zip/sakila-db.zip
 
 # uncompress downloaded files
-
 unzip $(pwd)/volumes/zip/sakila-db.zip \
     -d $(pwd)/volumes/zip/sakila-db
 
 # remove compressed originals
-
 rm $(pwd)/volumes/zip/sakila-db.zip
 
-
-# import demo data into db instance
-
+# import demo data into db instance (ddl)
 docker exec -i dev_mysql sh -c 'exec mysql -uroot -p"$MYSQL_ROOT_PASSWORD"' < $(pwd)/volumes/zip/sakila-db/sakila-db/sakila-schema.sql
 
+# import demo data into db instance (data)
 docker exec -i dev_mysql sh -c 'exec mysql -uroot -p"$MYSQL_ROOT_PASSWORD"' < $(pwd)/volumes/zip/sakila-db/sakila-db/sakila-data.sql
-
-
 ```
 
 
+## You can now connect to the DB Instance:
+>**host**: localhost  
+**port**: 3306  
+**database**: demo  
+**user**: user  
+**password**: password  
 
 # SQLite
 
 
-## llll
-
-```
-
-# create directory to hold persistant data & downloaded data
+```sh
+# create directories to hold persistantDB data
 mkdir -p $(pwd)/volumes/sqlite_db_data
+
+# create directories to hold downloaded data
 mkdir -p $(pwd)/volumes/zip
-```
 
-
-```
-
+# download demo db
 curl https://raw.githubusercontent.com/lerocha/chinook-database/master/ChinookDatabase/DataSources/Chinook_Sqlite.sqlite \
  --output $(pwd)/volumes/sqlite_db_data/chinook.sqlite
-
-
-
 ```
 
-
-
-
-
-
-
-# PostgreSQL
-
-```
-
-# create directory to hold persistant data & downloaded data
-mkdir -p $(pwd)/volumes/postgres_db_data
-mkdir -p $(pwd)/volumes/zip
-```
-
-
+## You can now connect to the DB Instance:
+>**db_location**: ./volumes/sqlite_db_data/chinook.sqlite
 
 
 # PostGIS
 
 
-```
-
-# create directory to hold persistant data & downloaded data
+```sh
+# create directories to hold persistantDB data
 mkdir -p $(pwd)/volumes/postgis_db_data
+
+# create directories to hold downloaded data
 mkdir -p $(pwd)/volumes/shapefiles
 mkdir -p $(pwd)/volumes/zip
 mkdir -p $(pwd)/volumes/sql
 
-```
+# create docker network
+docker network create mynetwork
 
-## PostGIS Local Development Guide
-
-The purpose of this repo is simply to document the steps needed to standup and load a local PostGIS instance.
-
-Standing it up is simply running a docker container -- but loading it is a multi-step ETL process detailed below (download, convert, load)
-
-## Run Local PostGIS Instance
-
-PostGIS is an optional extention you can install in a Postgres DB. While you can take the minimal steps to enable it on an existing instance, running via a dedicated (and pre-configured) container is the easiest way to go.
-
-```sh
-docker network create mynetwork && \
-docker run \
- -d \
+# run mysql docker container
+docker run -d \
  -v $(pwd)/volumes/db/postgis_db_data:/var/lib/postgresql/data \
- --network mynetwork \
  -e POSTGRES_PASSWORD=secret \
+ --network mynetwork \
  --name gis_db \
  -p 5432:5432 postgis/postgis
 ```
+## Download Spatial Data (Shapefiles)
 
-## Download Shapefiles
-
-The source for the GIS data to be loaded into PostGIS (for this guide at least) comes in the form of `shapefiles.
+The source for the GIS data to be loaded into PostGIS (for this guide at least) comes in the form of `shapefiles`.
 
 You should have little trouble finding plenty of free shapefile data sets you can use as source data.
 
-For my local development, I pulled down data for multiple states from this list of
-[OpenStreetMap data for the U.S.](http://download.geofabrik.de/north-america/us.html)
-
-While I'm certain that the other format will work (else why would they exit right) -- the process described below is specific to compressed `.shp` files.
+For this guide, you can pull down data for multiple states from this list of
+[OpenStreetMap data for the U.S.](http://download.geofabrik.de/north-america/us.html). There are multiple formats available, but the process described below uses the compressed `.shp` files.
 
 ```sh
 # download a target data set
-
 curl http://download.geofabrik.de/north-america/us/florida-latest-free.shp.zip \
     --output $(pwd)/volumes/zip/florida-latest-free.shp.zip
 
@@ -213,55 +172,59 @@ unzip $(pwd)/volumes/zip/florida-latest-free.shp.zip \
 rm $(pwd)/volumes/zip/florida-latest-free.shp.zip
 ```
 
-## Install `shp2pgsql`
+## Transform Spatial Data (Shapefiles) to SQL
 
-The remaining heavy lift is in tranforming the `.shp` files into `.sql` files suitable for importing (via CLI) into the Dockerized PostGIS instance. For this guide, we will do this with the `shp2pgsql` dataloader.
+Once you have the `.shp` files available locally, you use them to derive `.sql` files suitable for importing (via CLI) into the Dockerized PostGIS instance.
 
-While this may eventually be put into a container, with a `Dockerfile` in this repo, for now I'll just install & run from my local for time.
+I believe there are multiple tools for completing this process -- but for this guide, we will use the [**shp2pgsql**](https://manpages.debian.org/stretch/postgis/shp2pgsql.1.en.html) dataloader. While this may eventually be put into a container, for now just install & run from your local machine.
+
+### Install `shp2pgsql`
+
+My system uses [DNF](https://en.wikipedia.org/wiki/DNF_(software)) as a package manager. yours may use yum, apt, brew or something else. If you need help, do a search with the string below (replacing the bracketed text with your OS version).
+
+> Install shp2pgsql on `[insert OS version here]`
 
 ```sh
-# install package containing `shp2pgsql`
+# install package containing `shp2pgsql` <- for .rpm-based distributions
 sudo dnf install postgis-utils
+```
 
-# transform shapefiles via shp2pgsql magic
-#always set the SRID
+### Transform the Shapefiles to SQL
+
+Once you have `shp2pgsql` available locally -- you can use it to transform shapefiles (`.shp`) to SQL.
+
+##### **NOTE:** The value passed with the `-s` flag is the [SRID](https://en.wikipedia.org/wiki/Spatial_reference_system). Always make an attempt to determine the `SRID` used in the source data, else the tool will fall back to a default that may not produce the projections you expect.
+
+```sh
+# transform shapefiles via shp2pgsql
 shp2pgsql -s 4326 \
   $(pwd)/volumes/shapefiles/florida/gis_osm_places_free_1 > \
   $(pwd)/volumes/sql/florida.gis_osm_places_free_1.sql
 ```
 
 
-```
-gis_osm_buildings_a_free_1
-gis_osm_landuse_a_free_1
-gis_osm_natural_a_free_1
-gis_osm_natural_free_1
-gis_osm_places_a_free_1
-gis_osm_places_free_1
-gis_osm_pofw_a_free_1
-gis_osm_pofw_free_1
-gis_osm_pois_a_free_1
-gis_osm_pois_free_1
-gis_osm_railways_free_1
-gis_osm_roads_free_1
-gis_osm_traffic_a_free_1
-gis_osm_traffic_free_1
-gis_osm_transport_a_free_1
-gis_osm_transport_free_1
-gis_osm_water_a_free_1
-gis_osm_waterways_free_1
-```
+##  Load the DB
 
-##  Import into DB
-
-The `.sql` files produced by `shp2pgsql` are now ready to use. This is not different from running any other `.sql` file -- but since I always have to lookup the `psql` CLI syntax, I'll document below.
+Once you've got `.sql` files, you can now execute them via CLI.
 
 ```sh
-PGPASSWORD=secret psql \
+# set postgres password as ENV Variable
+PGPASSWORD=secret
+
+# execute SQL against a remote postgres instance
+psql \
  -h localhost -d postgres\
  -U postgres \
  -f $(pwd)/volumes/sql/florida.gis_osm_places_free_1.sql
+
+# keeping this here until I can confirm the multi line above works
+# PGPASSWORD=secret psql \
+#  -h localhost -d postgres\
+#  -U postgres \
+#  -f $(pwd)/volumes/sql/florida.gis_osm_places_free_1.sql
 ```
+
+
 
 
 ## Note about SRIDs
@@ -358,3 +321,11 @@ docker exec \
     -c 'exec psql -U dvdrental -d dvdrental -f /data/dvdrental.tar'
 
 ```
+
+
+
+## PostGIS Local Development Guide
+
+The purpose of this repo is simply to document the steps needed to standup and load a local PostGIS instance.
+
+Standing it up is simply running a docker container -- but loading it is a multi-step ETL process detailed below (download, convert, load)
