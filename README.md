@@ -249,40 +249,31 @@ curl https://raw.githubusercontent.com/lerocha/chinook-database/master/ChinookDa
 
 
 
+# PostgreSQL (Dockerized DB Instance)
 
+##### [**Repo Link**](https://github.com/sudowing/cms-utilization-db)
 
+A couple years ago, I published [a project that loads a PostgreSQL Instance](https://github.com/sudowing/cms-utilization-db). If you're just looking to get a sample PostgreSQL instance running, That's probably a decent project to use.
 
-# PostgreSQL
+# PostgreSQL (Simple ETL)
 
+The demo data used below was published by the team at [postgresqltutorial](https://www.postgresqltutorial.com/postgresql-sample-database/)
 
-https://sp.postgresqltutorial.com/wp-content/uploads/2019/05/dvdrental.zip
+I've just added the various CLI steps needed to pull down this data and load it into a dockerized PostgreSQL instance.
 
-```
+## Download Sample Data
 
+The order of these steps differs from some of the other DB dialects because we want to mount the directory holding our SQL (`volumes/sql`) to the container running the DB. We are doing this so we can execute the import using the `psql` client already present in the container.
+
+```sh
 # create directory to hold persistant data & downloaded data
 mkdir -p $(pwd)/volumes/psql_db_data
 mkdir -p $(pwd)/volumes/zip
 mkdir -p $(pwd)/volumes/sql
-```
 
-## PostgreSQL Local Development Guide
-
-The purpose of this repo is simply to document the steps needed to standup and load a local PostGIS instance.
-
-Standing it up is simply running a docker container -- but loading it is a multi-step ETL process detailed below (download, convert, load)
-
-
-## Download Sample DB
-
-BLAH BLAH BLAH
-
-
-```sh
 # download a target data set
-
 curl https://sp.postgresqltutorial.com/wp-content/uploads/2019/05/dvdrental.zip \
     --output $(pwd)/volumes/zip/dvdrental.zip
-
 
 # uncompress downloaded files
 unzip $(pwd)/volumes/zip/dvdrental.zip \
@@ -292,43 +283,40 @@ unzip $(pwd)/volumes/zip/dvdrental.zip \
 rm $(pwd)/volumes/zip/dvdrental.zip
 ```
 
-
-
 ## Run Local PostgreSQL Instance
 
-BLAH BLAH BLAH
+Here you will see we mount the directory holding our SQL (`volumes/sql`) to the container.
 
 ```sh
-docker network create mynetwork && \
+# create docker network
+docker network create mynetwork
+
+# run mysql docker container
 docker run \
  -d \
  -v $(pwd)/volumes/db/psql_db_data:/var/lib/postgresql/data \
  -v $(pwd)/volumes/sql/dvdrental:/data \
- --network mynetwork \
  -e POSTGRES_PASSWORD=secret \
  -e POSTGRES_USER=dvdrental \
+ --network mynetwork \
  --name dvd_rental_db \
  -p 5432:5432 postgres
 ```
 
+##  Import Data via `psql` inside DB Container
 
-##  Import into DB via `pg_restore`
-
-BLAH BLAH BLAH
+Run a `psql` process inside the container that references the mounted demo data.
 
 ```sh
-                                   
 # import demo data into db instance
 docker exec \
     -i dvd_rental_db sh \
     -c 'exec psql -U dvdrental -d dvdrental -f /data/dvdrental.tar'
-
 ```
 
-
-
-## PostGIS Local Development Guide
-
-The purpose of this repo is simply to document the steps needed to standup and load a local PostGIS instance.
-
-Standing it up is simply running a docker container -- but loading it is a multi-step ETL process detailed below (download, convert, load)
+## You can now connect to the DB Instance:
+>**host**: localhost  
+**port**: 5432  
+**database**: dvdrental  
+**user**: dvdrental  
+**password**: secret 
