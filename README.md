@@ -9,22 +9,23 @@
         * [Use `shp2pgsql` to Produce SQL](#postgis-transform_use_shp2pgsql_to_produce_sql)
     * [Load the DB](#postgis-load_the_db)
     * [More on SRIDs](#postgis-more_on_sri_ds)
-    * [Connect to DB Instance:](#postgis-connect_to_db_instance)
+    * [Connect to DB Instance](#postgis-connect_to_db_instance)
 * [PostgreSQL (Dockerized DB Instance)](#postgresql_premade)
-    * [Connect to DB Instance:](#postgresql_premade-connect_to_db_instance)
+    * [Create Docker Network & Run DB Container](#postgresql_premade-create_docker_network_run_db_container)
+    * [Connect to DB Instance](#postgresql_premade-connect_to_db_instance)
 * [PostgreSQL (Simple ETL)](#postgresql)
     * [Download Sample Data](#postgresql-download_sample_data)
     * [Create Docker Network & Run DB Container](#postgresql-create_docker_network_run_db_container)
     * [Import Data via `psql` inside DB Container](#postgresql-import_data_via_psql_inside_db_container)
-    * [Connect to DB Instance:](#postgresql-connect_to_db_instance)
+    * [Connect to DB Instance](#postgresql-connect_to_db_instance)
 * [MySQL](#mysql)
     * [Create Docker Network & Run DB Container](#mysql-create_docker_network_run_db_container)
     * [Load Sample Demo DB (`world-db`)](#mysql-load_sample_demo_db_world_db)
     * [Load Sample Demo DB (`sakila-db`)](#mysql-load_sample_demo_db_sakila_db)
-    * [Connect to DB Instance:](#mysql-connect_to_db_instance)
+    * [Connect to DB Instance](#mysql-connect_to_db_instance)
 * [SQLite](#sqlite)
     * [Download Sample DB (`chinook-db`)](#sqlite-download_sample_db_chinook_db)
-    * [Connect to DB Instance:](#sqlite-connect_to_db_instance)
+    * [Connect to DB Instance](#sqlite-connect_to_db_instance)
 
 # <a id="postgis"></a> PostGIS
 
@@ -82,7 +83,7 @@ I believe there are multiple tools for completing this process -- but for this g
 
 ### <a id="postgis-transform_install_shp2pgsql"></a> Install `shp2pgsql`
 
-My system uses [DNF](https://en.wikipedia.org/wiki/DNF_(software)) as a package manager. yours may use yum, apt, brew or something else. If you need help, do a search with the string below (replacing the bracketed text with your OS version).
+My system uses [DNF](https://en.wikipedia.org/wiki/DNF_(software)) as a package manager. Your system may use yum, apt, brew or something else entirely. If you need help, do a search with the string below (replacing the bracketed text with your OS version).
 
 > Install shp2pgsql on `[insert OS version here]`
 
@@ -144,6 +145,8 @@ SELECT f_table_name, f_geometry_column, srid FROM geometry_columns;
 ##### [**Repo Link**](https://github.com/sudowing/cms-utilization-db)
 
 A couple years ago, I published [a project that loads a PostgreSQL Instance](https://github.com/sudowing/cms-utilization-db). If you're just looking to get a sample PostgreSQL instance running, That's probably a decent project to use.
+
+## <a id="postgresql_premade-create_docker_network_run_db_container"></a> Connect to DB Instance:
 
 ```sh
 # create directories to hold persistantDB data
