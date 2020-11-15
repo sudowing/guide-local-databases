@@ -42,7 +42,7 @@ mkdir -p $(pwd)/volumes/sql
 # create docker network
 docker network create mynetwork
 
-# run mysql docker container
+# run postgres docker container (with postgis enabled)
 docker run -d \
  -v $(pwd)/volumes/db/postgis_db_data:/var/lib/postgresql/data \
  -e POSTGRES_PASSWORD=secret \
@@ -152,7 +152,7 @@ A couple years ago, I published [a project that loads a PostgreSQL Instance](htt
 # create directories to hold persistantDB data
 mkdir -p $(pwd)/volumes/db/postgres_cms_data
 
-# run mysql docker container
+# run postgres docker container (with data pre-loaded)
 docker run -d \
  -v $(pwd)/volumes/db/postgres_cms_data:/var/lib/postgresql/data \
  -e POSTGRES_DB=govdata \
@@ -215,7 +215,7 @@ Here you will see we mount the directory holding our SQL (`volumes/sql`) to the 
 # create docker network
 docker network create mynetwork
 
-# run mysql docker container
+# run postgres docker container
 docker run \
  -d \
  -v $(pwd)/volumes/db/psql_db_data:/var/lib/postgresql/data \
