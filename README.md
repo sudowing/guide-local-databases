@@ -26,6 +26,13 @@
 * [SQLite](#sqlite)
     * [Download Sample DB (`chinook-db`)](#sqlite-download_sample_db_chinook_db)
     * [Connect to DB Instance](#sqlite-connect_to_db_instance)
+* [SQL-Server (MSSQL)](#sql-server)
+    * [Download Sample DB Backups](#mssql-download_sample_db_backups)
+    * [Create Docker Volumes](#mssql-create_docker_volumes)
+    * [Run SQL-Server in a Container](#mssql-run_sql_server_in_a_container)
+    * [Connect to the DB](#mssql-connect_to_the_db)
+    * [Restore Backups from DB client](#mssql-restore_backups_from_db_client)
+
 
 # <a id="postgis"></a> PostGIS
 
@@ -89,7 +96,9 @@ My system uses [DNF](https://en.wikipedia.org/wiki/DNF_(software)) as a package 
 
 ```sh
 # install package containing `shp2pgsql` <- for .rpm-based distributions
-sudo dnf install postgis-utils
+sudo apt install postgis-utils
+
+# https://computingforgeeks.com/how-to-install-postgis-on-ubuntu-debian/
 ```
 
 ### <a id="postgis-transform_use_shp2pgsql_to_produce_sql"></a> Use `shp2pgsql` to Produce SQL
@@ -334,3 +343,77 @@ curl https://raw.githubusercontent.com/lerocha/chinook-database/master/ChinookDa
 
 ## <a id="sqlite-connect_to_db_instance"></a> Connect to DB Instance:
 >**db_location**: ./volumes/db/sqlite_db_data/chinook.sqlite
+
+# <a id='sql-server'></a>SQL-Server (MSSQL)
+
+## <a id='mssql-download_sample_db_backups'></a>Download Sample DB Backups
+
+Microsoft published multiple sample databases for usage in training and development. You can download a few using the links below.
+ - [adventureworks/AdventureWorksDW2019.bak](https://github.com/Microsoft/sql-server-samples/releases/download/adventureworks/AdventureWorksDW2019.bak)
+ - [wide-world-importers-v1.0/WideWorldImportersDW-Full.bak](https://github.com/Microsoft/sql-server-samples/releases/download/wide-world-importers-v1.0/WideWorldImportersDW-Full.bak)
+
+
+```sh
+# make the directory to hold the backups
+mkdir -p ./volumes/mssql/backup
+
+# download AdventureWorksDW2017
+curl -L -o ./volumes/mssql/backup/AdventureWorksDW2017.bak https://github.com/Microsoft/sql-server-samples/releases/download/adventureworks/AdventureWorksDW2017.bak
+
+# download WideWorldImportersDW
+curl -L -o ./volumes/mssql/backup/WideWorldImportersDW-Full.bak 'https://github.com/Microsoft/sql-server-samples/releases/download/wide-world-importers-v1.0/WideWorldImportersDW-Full.bak'
+```
+
+## <a id='mssql-create_docker_volumes'></a>Create Docker Volumes
+```sh
+docker volume create --driver local vlm_0001_mssql
+docker volume create --driver local vlm_000_sqlserver
+```
+
+## <a id='mssql-run_sql_server_in_a_container'></a>Run SQL-Server in a Container
+You will mount the two volumes created above for persisting DB data, and mount the directory holding the backups you downloaded to a location you can use to restore from the DB client.
+
+```sh
+docker run -d \
+ -e "ACCEPT_EULA=Y" \
+ -e "SA_PASSWORD=Alaska2017" \
+ -p 21143:1433 \
+ -v vlm_0001_mssql:/var/opt/mssql \
+ -v vlm_000_sqlserver:/var/opt/sqlserver \
+ -v $(pwd)/volumes/mssql/backup:/mssql_backups \
+ --name mssql19 \
+  mcr.microsoft.com/mssql/server:2019-latest
+```
+
+## <a id='mssql-connect_to_the_db'></a>Connect to the DB
+
+```
+host: localhost
+user: sa
+password: Alaska2017
+```
+
+## <a id='mssql-restore_backups_from_db_client'></a>Restore Backups from DB client
+```sql
+
+-- list all datafiles
+RESTORE FILELISTONLY FROM DISK = '/mssql_backups/AdventureWorksDW2017.bak'
+
+-- restore DB, explicitely moving datafiles
+RESTORE DATABASE AdventureWorksDW2017 FROM DISK = '/mssql_backups/AdventureWorksDW2017.bak'
+WITH
+   MOVE 'AdventureWorksDW2017' to '/var/opt/mssql/data/AdventureWorksDW2017.mdf'
+  ,MOVE 'AdventureWorksDW2017_log' to '/var/opt/mssql/data/AdventureWorksDW2017_log.mdf'
+
+-- list all datafiles
+RESTORE FILELISTONLY FROM DISK = '/mssql_backups/WideWorldImportersDW-Full.bak'
+
+-- restore DB, explicitely moving datafiles
+RESTORE DATABASE WideWorldImportersDW FROM DISK = '/mssql_backups/WideWorldImportersDW-Full.bak'
+WITH
+   MOVE 'WWI_Primary' to '/var/opt/mssql/data/WWI_Primary.mdf'
+  ,MOVE 'WWI_UserData' to '/var/opt/mssql/data/WWI_UserData.mdf'
+  ,MOVE 'WWI_Log' to '/var/opt/mssql/data/WWI_Log.mdf'
+  ,MOVE 'WWIDW_InMemory_Data_1' to '/var/opt/mssql/data/WWIDW_InMemory_Data_1.mdf'
+```
+
