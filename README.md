@@ -32,7 +32,17 @@
     * [Run SQL-Server in a Container](#mssql-run_sql_server_in_a_container)
     * [Connect to the DB](#mssql-connect_to_the_db)
     * [Restore Backups from DB client](#mssql-restore_backups_from_db_client)
-
+* [Oracle](#oracle)
+    * [Build Docker Image](#oracle-build_image-)
+        * [Download Oracle Database Software](#oracle-build_image-download_oracle_software)
+        * [Clone Oracle Image Repo](#oracle-build_image-clone_git_repo)
+        * [Build Image via Script](#oracle-build_image-run_build_image_script)
+    * [Run DB via Docker](#oracle-run_via_container)
+    * [Load Sample Demo DB](#oracle-load_sample_schema)
+        * [Download Oracle Client Dependencies](#oracle-load_sample_schema-download_dependencies)
+        * [Download Sample Schemas](#oracle-load_sample_schema-download_schema)
+        * [update ABSOLUTE PATH in scripts via perl](#oracle-load_sample_schema-update_references)
+        * [mksample with passwords](#oracle-load_sample_schema-run_loader_script)
 
 # <a id="postgis"></a> PostGIS
 
@@ -416,4 +426,252 @@ WITH
   ,MOVE 'WWI_Log' to '/var/opt/mssql/data/WWI_Log.mdf'
   ,MOVE 'WWIDW_InMemory_Data_1' to '/var/opt/mssql/data/WWIDW_InMemory_Data_1.mdf'
 ```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+# <a id="#oracle"></a>Oracle
+
+
+## <a id="#oracle-build_image"></a>Build Docker Image
+
+
+### <a id="#oracle-build_image-download_oracle_software"></a>Download Oracle Database Software
+
+
+Oracle Database Enterprise Edition
+Oracle Database 12c Enterprise Edition
+
+
+Oracle Database Server 12c R2 is an industry leading relational database server.
+
+The Oracle Database Server Docker Image contains the Oracle Database Server 12.2.0.1 Enterprise Edition running on Oracle Linux 7. This image contains a default database in a multi-tenant configuration with a single pluggable database.
+
+oracle-database-enterprise-edition
+
+
+step 1
+
+
+
+https://www.oracle.com/database/technologies/oracle-database-software-downloads.html
+19.3 - Enterprise Edition (also includes Standard Edition 2)
+Linux x86-64	
+LINUX.X64_193000_db_home.zip
+
+
+### <a id="#oracle-build_image-clone_git_repo"></a>Clone Oracle Image Repo
+
+#### clone repo and cd into db related dir
+```
+git clone https://github.com/oracle/docker-images.git
+cd docker-images/OracleDatabase/SingleInstance/dockerfiles
+```
+
+
+### <a id="#oracle-build_image-run_build_image_script"></a>Build Image via Script
+
+
+
+#### Download file and place in `OracleDatabase/SingleInstance/dockerfiles/`
+```
+cp ~/Downloads/LINUX.X64_193000_db_home.zip 19.3.0/LINUX.X64_193000_db_home.zip
+```
+
+#### build docker image
+```
+./buildContainerImage.sh \
+    -v 19.3.0 \
+    -t oracle/database:19.3.0-ee \
+    -e
+```
+
+#### check to see new docker image
+```
+docker images | grep oracle/database
+oracle/database                                 19.3.0-ee       8e1e74626c10   27 seconds ago   6.67GB
+```
+
+
+## <a id="#oracle-run_via_container"></a>Run DB via Docker
+
+
+
+```sh
+docker volume create oracle_db_data
+
+docker run --rm -d \
+    -p 1521:1521 \
+    -p 5500:5500 \
+    -e ORACLE_PDB=alpha \
+    -e ORACLE_PWD=secret123 \
+    -e ORACLE_EDITION=enterprise \
+    -v oracle_db_data:/opt/oracle/oradata \
+    -v $(pwd)/volumes/sql/db-sample-schemas-19.2:/sample_data \
+    --name oracle_db \
+    oracle/database:19.3.0-ee
+
+
+docker run --name <container name> \
+    -p 1521:1521 \
+    -p 5500:5500 \
+    -e ORACLE_SID=<your SID> \
+    -e ORACLE_PDB=alpha \
+    -e ORACLE_PWD=secret123 \
+    -e INIT_SGA_SIZE=<your database SGA memory in MB> \
+    -e INIT_PGA_SIZE=<your database PGA memory in MB> \
+    -e ORACLE_EDITION=enterprise \
+    -e ORACLE_CHARACTERSET=<your character set> \
+    -e ENABLE_ARCHIVELOG=true \
+    -v [<host mount point>:]/opt/oracle/oradata \
+    oracle/database:19.3.0-ee
+
+
+docker run --rm \
+    -p 1521:1521 \
+    -p 5500:5500 \
+    -e ORACLE_PDB=alpha \
+    -e ORACLE_PWD=secret123 \
+    -e ORACLE_EDITION=enterprise \
+    --name oracle/database:19.3.0-ee \
+    oracle/database:19.3.0-ee
+
+```
+
+
+## <a id="#oracle-load_sample_schema"></a>Load Sample Demo DB
+
+
+
+### <a id="#oracle-load_sample_schema-download_dependencies"></a>Download Oracle Client Dependencies
+
+
+
+https://www.oracle.com/database/technologies/instant-client/linux-x86-64-downloads.html
+
+https://docs.oracle.com/en/database/oracle/oracle-database/21/comsc/installing-sample-schemas.html#GUID-3820972A-08D7-4033-9524-1E36676594EE
+
+
+mkdir -p $(pwd)/volumes/zip
+mkdir -p $(pwd)/volumes/sql
+mkdir -p $(pwd)/volumes/bin
+
+#### login
+
+instantclient + sqlplus + sqlldr
+
+#### download basic insta-client
+curl https://download.oracle.com/otn_software/linux/instantclient/213000/instantclient-basic-linux.x64-21.3.0.0.0.zip \
+    --output $(pwd)/volumes/zip/instantclient-basic-linux.x64-21.3.0.0.0.zip
+
+#### uncompress downloaded files
+unzip $(pwd)/volumes/zip/instantclient-basic-linux.x64-21.3.0.0.0.zip \
+    -d $(pwd)/volumes/bin
+
+#### download sqlplus
+curl https://download.oracle.com/otn_software/linux/instantclient/213000/instantclient-sqlplus-linux.x64-21.3.0.0.0.zip \
+    --output $(pwd)/volumes/zip/instantclient-sqlplus-linux.x64-21.3.0.0.0.zip
+
+#### uncompress downloaded files
+unzip $(pwd)/volumes/zip/instantclient-sqlplus-linux.x64-21.3.0.0.0.zip \
+    -d $(pwd)/volumes/bin
+
+
+
+#### download sqlplus
+curl https://download.oracle.com/otn_software/linux/instantclient/213000/instantclient-tools-linux.x64-21.3.0.0.0.zip \
+    --output $(pwd)/volumes/zip/instantclient-tools-linux.x64-21.3.0.0.0.zip
+
+#### uncompress downloaded files
+unzip $(pwd)/volumes/zip/instantclient-tools-linux.x64-21.3.0.0.0.zip \
+    -d $(pwd)/volumes/bin
+
+
+https://download.oracle.com/otn_software/linux/instantclient/213000/instantclient-tools-linux.x64-21.3.0.0.0.zip
+
+
+#### instantclient_21_3
+cd $(pwd)/volumes/bin/instantclient_21_3
+
+
+### <a id="#oracle-load_sample_schema-download_schema"></a>Download Sample Schemas
+
+```sh
+# create directory to hold persistant data & downloaded data
+mkdir -p $(pwd)/volumes/db/oracle_db_data
+mkdir -p $(pwd)/volumes/zip
+mkdir -p $(pwd)/volumes/sql
+
+# download a target data set
+# https://github.com/oracle/db-sample-schemas/releases/tag/v19.2
+
+curl https://codeload.github.com/oracle/db-sample-schemas/zip/refs/tags/v19.2 \
+    --output $(pwd)/volumes/zip/db-sample-schemas-19.2.zip
+
+# uncompress downloaded files
+unzip $(pwd)/volumes/zip/db-sample-schemas-19.2.zip \
+    -d $(pwd)/volumes/sql
+
+# remove compressed originals
+# rm $(pwd)/volumes/zip/db-sample-schemas-19.2.zip
+```
+
+
+### <a id="#oracle-load_sample_schema-update_references"></a>update ABSOLUTE PATH in scripts via perl
+
+```sh
+# replace path in template sql
+cd $(pwd)/volumes/sql/db-sample-schemas-19.2
+perl -p -i.bak -e 's#__SUB__CWD__#'$(pwd)'#g' *.sql */*.sql */*.dat
+```
+
+### <a id="#oracle-load_sample_schema-run_loader_script"></a>mksample with passwords
+
+```sh
+@/home/sudowing/Documents/repos/guide-local-databases/volumes/sql/db-sample-schemas-19.2/mksample secret123 secret123 secret123 secret123 secret123 secret123 secret123 secret123 EXAMPLE TEMP /tmp/oracle_demo_log localhost:1521/alpha
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
